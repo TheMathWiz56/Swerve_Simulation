@@ -50,6 +50,7 @@ class OGfromImage:
                 j += 1
             i += 1
 
+        "Exports create OG grid to a text file for later use"
         self.writeToTextFile()
 
     "used to set which colors are empty space"

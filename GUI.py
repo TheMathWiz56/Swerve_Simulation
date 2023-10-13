@@ -131,7 +131,7 @@ bbpadx = 150
 bbpady = 10
 allianceColor.pack(side='left', padx=bbpadx, pady=bbpady, fill='x')
 togglePieces.pack(side='left', padx=bbpadx, pady=bbpady, fill='x')
-getScreenSize.pack(side='left',pady=bbpady, fill='x')
+getScreenSize.pack(side='left', pady=bbpady, fill='x')
 timer.pack(pady=bbpady, fill='x')
 
 "loop main window"
