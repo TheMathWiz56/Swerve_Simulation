@@ -8,6 +8,7 @@ import sv_ttk
 import os
 from PIL import ImageTk, Image
 import GenerateOGfromImage
+import Joystick
 
 """
 To Do List:
@@ -18,6 +19,9 @@ To Do List:
 
 3. have main gui default to normal field image and occupancy grid
 4. get xbox input in program
+
+combine occupancy grid classes into one
+
 5. make swerve drive class
 6. display robot image on top of field image
 7. ability to move robot around on field
@@ -34,8 +38,12 @@ To Do List:
 np.set_printoptions(threshold=sys.maxsize)
 
 "Tkinter window size and formatting"
+width = "970"
+height = "470"
 root = tk.Tk()
-root.geometry("970x470")
+root.geometry(width + "x" + height)
+root.minsize(int(width), int(height))
+root.maxsize(int(width), int(height))
 root.title("2848 Swerve Path Planner")
 sv_ttk.use_dark_theme()
 
@@ -54,6 +62,43 @@ def getWindowSize():
     print(root.winfo_width())
     print(root.winfo_height())
 
+
+def updateJoystick():
+    x, y, x1, y1 = joystick1.get_values()
+    jcanvas0.moveto(jimg0, int(165 / 2) - 19 + int(x * 65), int(165 / 2) - 18 - int(y * 65))
+    jcanvas1.moveto(jimg1, int(165 / 2) - 19 + int(x1 * 65), int(165 / 2) - 18 - int(y1 * 65))
+    root.after(20, updateJoystick)
+
+
+isEnabled = 0
+
+
+def robotEnable():
+    global isEnabled
+    isEnabled += 1
+    robotEnableFlash()
+
+
+enabledFlashCounter = 0
+
+
+def robotEnableFlash():
+    global enabledFlashCounter
+    if isEnabled % 2 == 1:
+        if enabledFlashCounter == 0:
+            enabledFlash.config(text="Enabled")
+            enabledFlashCounter += 1
+        else:
+            enabledFlash.config(text="")
+            enabledFlashCounter -= 1
+        root.after(100, robotEnableFlash)
+    else:
+        enabledFlash.config(text="Enable")
+
+
+"Joystick instance"
+joystick1 = Joystick.XboxController()
+root.after(20, updateJoystick)
 
 "Initialize all frames for main window"
 borderwidth = 5
@@ -98,7 +143,7 @@ tbWidth = 20
 pickStart = ttk.Button(tFrame0, text="Pick Start", width=tbWidth)
 pickEnd = ttk.Button(tFrame0, text="Pick End", width=tbWidth)
 showPath = ttk.Button(tFrame0, text="Show Path", width=tbWidth)
-enabledFlash = ttk.Button(tFrame1, text="Enabled", width=tbWidth)
+enabledFlash = ttk.Button(tFrame1, text="Enable", width=tbWidth, command=robotEnable)
 
 tbpadx = 37
 tbpady = 0
@@ -126,6 +171,15 @@ jcanvas0.create_line(0, jcsize / 2, jcsize, jcsize / 2, dash=(4, 2))
 jcanvas1.create_line(jcsize / 2, 0, jcsize / 2, jcsize, dash=(4, 2))
 jcanvas1.create_line(0, jcsize / 2, jcsize, jcsize / 2, dash=(4, 2))
 
+"Adding joystick images to Joystick Canvases"
+jimgsize = 40
+
+joystickImagge = Image.open("Images/Thumbstick.png")
+joystickImagge = joystickImagge.resize((jimgsize, jimgsize))
+jimgpng = ImageTk.PhotoImage(joystickImagge)
+jimg0 = jcanvas0.create_image(jcsize / 2, jcsize / 2, image=jimgpng)
+jimg1 = jcanvas1.create_image(jcsize / 2, jcsize / 2, image=jimgpng)
+
 "Create and pack buttons for bFrame"
 allianceColor = ttk.Button(bFrame0, text="Alliance Color", width=tbWidth)
 togglePieces = ttk.Button(bFrame0, text="Toggle Pieces", width=tbWidth)
@@ -139,7 +193,6 @@ timer.pack(pady=bbpady, fill='x')
 
 "Creating Menubar"
 menubar = tk.Menu()
-# Declare file and edit for showing in menu bar
 fieldM = tk.Menu(menubar, tearoff=False)
 robotM = tk.Menu(menubar, tearoff=False)
 driveM = tk.Menu(menubar, tearoff=False)
@@ -148,7 +201,6 @@ kinematicsM = tk.Menu(menubar, tearoff=False)
 dimensionsM = tk.Menu(menubar, tearoff=False)
 simulationM = tk.Menu(menubar, tearoff=False)
 
-# Display file and edit declared in previous step
 menubar.add_cascade(label='Field', menu=fieldM)
 fieldM.add_cascade(label="Update Field Image")
 fieldM.add_cascade(label="Update Occupancy Grid")
@@ -174,10 +226,8 @@ simulationM.add_cascade(label="Set PID")
 
 menubar.add_cascade(label="Print Window Size", command=getWindowSize)
 
-# Display of menu bar in the app
+"Display of menu bar in the app"
 root.config(menu=menubar)
-
-optionMenu = ttk.OptionMenu
 
 "loop main window"
 root.mainloop()
