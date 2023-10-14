@@ -35,7 +35,7 @@ np.set_printoptions(threshold=sys.maxsize)
 
 "Tkinter window size and formatting"
 root = tk.Tk()
-root.geometry("1185x550")
+root.geometry("970x470")
 root.title("2848 Swerve Path Planner")
 sv_ttk.use_dark_theme()
 
@@ -56,13 +56,14 @@ def getWindowSize():
 
 
 "Initialize all frames for main window"
-tFrame = ttk.Frame(root)
+borderwidth = 5
+tFrame = ttk.Frame(root, relief='raised', borderwidth=borderwidth)
 tFrame0 = ttk.Frame(tFrame)
 tFrame1 = ttk.Frame(tFrame)
 mFrame = ttk.Frame(root)
-mFrame0 = ttk.Frame(mFrame)
+mFrame0 = ttk.Frame(mFrame, relief='groove', borderwidth=borderwidth)
 mFrame1 = ttk.Frame(mFrame)
-bFrame = ttk.Frame(root)
+bFrame = ttk.Frame(root, relief='raised', borderwidth=borderwidth)
 bFrame0 = ttk.Frame(bFrame)
 bFrame1 = ttk.Frame(bFrame)
 
@@ -83,6 +84,7 @@ bFrame1.pack(side='left')
 cSizeMultiplier = 7680 / 3720
 cHeight = 375
 cWidth = int(cHeight * cSizeMultiplier)
+mFrame0.configure(width=cWidth, height=cHeight)
 canvas = tk.Canvas(mFrame0, height=cHeight, width=cWidth)
 canvas.pack(side='left', anchor='sw', expand=True)
 
@@ -92,47 +94,90 @@ img = ImageTk.PhotoImage(fieldImage)
 canvas.create_image(0, cHeight / 2, anchor="w", image=img)
 
 "Create and pack buttons for tFrame"
-pickStart = ttk.Button(tFrame0, text="Pick Start")
-pickEnd = ttk.Button(tFrame0, text="Pick End")
-showPath = ttk.Button(tFrame0, text="Show Path")
-enabledFlash = ttk.Button(tFrame1, text="Enabled")
+tbWidth = 20
+pickStart = ttk.Button(tFrame0, text="Pick Start", width=tbWidth)
+pickEnd = ttk.Button(tFrame0, text="Pick End", width=tbWidth)
+showPath = ttk.Button(tFrame0, text="Show Path", width=tbWidth)
+enabledFlash = ttk.Button(tFrame1, text="Enabled", width=tbWidth)
 
-tbpadx = 100
-tbpady = 10
+tbpadx = 37
+tbpady = 0
 pickStart.pack(side="left", padx=tbpadx, pady=tbpady)
 pickEnd.pack(side="left", padx=tbpadx, pady=tbpady)
 showPath.pack(side="left", padx=tbpadx, pady=tbpady)
-enabledFlash.pack(anchor="e", padx=tbpadx, pady=tbpady)
+enabledFlash.pack(anchor="e")
 
 "Create and pack canvases for joystick graphs"
-jcsize = 200
-jcanvas0 = tk.Canvas(mFrame0, width=jcsize, height=jcsize)
-jcanvas1 = tk.Canvas(mFrame0, width=jcsize, height=jcsize)
+jcsize = 165
+jcanvas0 = tk.Canvas(mFrame1, width=jcsize, height=jcsize)
+jcanvas1 = tk.Canvas(mFrame1, width=jcsize, height=jcsize)
 
-jcanvas0.pack(side='top', padx=100, pady=10)
-jcanvas1.pack(side='top', padx=100, pady=10)
+jpadx = 5
+jpady = 10
+jcanvas0.pack(side='top', anchor="w", pady=jpady, padx=jpadx)
+jcanvas1.pack(side='top', anchor="w", pady=jpady, padx=jpadx)
 
 "Draw axes on Joystick Canvases"
-jcanvas0.create_oval(0, 0, 200, 200, fill="white")
-jcanvas1.create_oval(0, 0, 200, 200, fill="white")
+jcanvas0.create_oval(0, 0, jcsize, jcsize, fill="white")
+jcanvas1.create_oval(0, 0, jcsize, jcsize, fill="white")
 
-jcanvas0.create_line(100, 0, 100, 200, dash=(4, 2))
-jcanvas0.create_line(0, 100, 200, 100, dash=(4, 2))
-jcanvas1.create_line(100, 0, 100, 200, dash=(4, 2))
-jcanvas1.create_line(0, 100, 200, 100, dash=(4, 2))
+jcanvas0.create_line(jcsize / 2, 0, jcsize / 2, jcsize, dash=(4, 2))
+jcanvas0.create_line(0, jcsize / 2, jcsize, jcsize / 2, dash=(4, 2))
+jcanvas1.create_line(jcsize / 2, 0, jcsize / 2, jcsize, dash=(4, 2))
+jcanvas1.create_line(0, jcsize / 2, jcsize, jcsize / 2, dash=(4, 2))
 
 "Create and pack buttons for bFrame"
-allianceColor = ttk.Button(bFrame0, text="Alliance Color")
-togglePieces = ttk.Button(bFrame0, text="Toggle Pieces")
-getScreenSize = ttk.Button(bFrame0, text="Get Size", command=getWindowSize)
-timer = ttk.Label(bFrame1, text="Timer")
+allianceColor = ttk.Button(bFrame0, text="Alliance Color", width=tbWidth)
+togglePieces = ttk.Button(bFrame0, text="Toggle Pieces", width=tbWidth)
+timer = ttk.Label(bFrame1, text="Timer", width=tbWidth)
 
-bbpadx = 150
-bbpady = 10
+bbpadx = 107
+bbpady = 0
 allianceColor.pack(side='left', padx=bbpadx, pady=bbpady, fill='x')
 togglePieces.pack(side='left', padx=bbpadx, pady=bbpady, fill='x')
-getScreenSize.pack(side='left', pady=bbpady, fill='x')
 timer.pack(pady=bbpady, fill='x')
+
+"Creating Menubar"
+menubar = tk.Menu()
+# Declare file and edit for showing in menu bar
+fieldM = tk.Menu(menubar, tearoff=False)
+robotM = tk.Menu(menubar, tearoff=False)
+driveM = tk.Menu(menubar, tearoff=False)
+physicalSettingsM = tk.Menu(menubar, tearoff=False)
+kinematicsM = tk.Menu(menubar, tearoff=False)
+dimensionsM = tk.Menu(menubar, tearoff=False)
+simulationM = tk.Menu(menubar, tearoff=False)
+
+# Display file and edit declared in previous step
+menubar.add_cascade(label='Field', menu=fieldM)
+fieldM.add_cascade(label="Update Field Image")
+fieldM.add_cascade(label="Update Occupancy Grid")
+fieldM.add_cascade(label="Display Occupancy Grid")
+fieldM.add_cascade(label="Set Default")
+
+menubar.add_cascade(label='Robot', menu=robotM)
+robotM.add_cascade(label="Drive", menu=driveM)
+driveM.add_cascade(label="Tank")
+driveM.add_cascade(label="Swerve")
+robotM.add_cascade(label="Physical Settings", menu=physicalSettingsM)
+physicalSettingsM.add_cascade(label="Kinematics", menu=kinematicsM)
+physicalSettingsM.add_cascade(label="Dimensions", menu=dimensionsM)
+kinematicsM.add_cascade(label="MAX Velocity")
+kinematicsM.add_cascade(label="MAX Acceleration")
+kinematicsM.add_cascade(label="MAX Jerk")
+dimensionsM.add_cascade(label="Edit Width")
+dimensionsM.add_cascade(label="Edit Length")
+
+menubar.add_cascade(label="Simulation", menu=simulationM)
+simulationM.add_cascade(label="Set % error")
+simulationM.add_cascade(label="Set PID")
+
+menubar.add_cascade(label="Print Window Size", command=getWindowSize)
+
+# Display of menu bar in the app
+root.config(menu=menubar)
+
+optionMenu = ttk.OptionMenu
 
 "loop main window"
 root.mainloop()
