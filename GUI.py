@@ -102,31 +102,39 @@ def updateRobotPose():
     global robotx, roboty, robotw, tkrobotImage, crobotImage
     x, y, x1, y1 = joystick1.get_values()
     "will need to find PythagC, cap at maxV and then find theta from og x and y"
-    robotx += (x * deltaT / 1000 * 500)
-    roboty += (y * deltaT / 1000 * 500)
-    robotw += x1 * deltaT / 1000 * 1000 * -1
+    temprobotx = robotx
+    temproboty = roboty
+    temprobotw = robotw
 
-    xyMatrix = np.array([robotx, roboty])
+    temprobotx += (x * deltaT / 1000 * 500)
+    temproboty += (y * deltaT / 1000 * 500)
+    temprobotw += x1 * deltaT / 1000 * 1000 * -1
+
+    xyMatrix = np.array([temprobotx, temproboty])
     rMatrix = np.array([[1, 0], [0, -1]])
     canvasOutput = np.matmul(xyMatrix, rMatrix)
-    print(canvasOutput)
 
     xsize, ysize = OCGarr.shape
     OCGxscaler = xsize / cWidth
     OCGyscaler = ysize / cHeight
 
-    checkRobotPoseUpdate(int(canvasOutput[0] * OCGxscaler), int(ysize - canvasOutput[1] * OCGyscaler - 1), 50)
-
-    canvas.delete(crobotImage)
-    robotImageR = robotImage.rotate(robotw, expand=True)
-    tkrobotImage = ImageTk.PhotoImage(robotImageR)
-    crobotImage = canvas.create_image(canvasOutput[0], canvasOutput[1], image=tkrobotImage)
+    if checkRobotPoseUpdate(int(canvasOutput[0] * OCGxscaler), int(ysize - canvasOutput[1] * OCGyscaler - 1),
+                            temprobotw, 35):
+        canvas.delete(crobotImage)
+        robotImageR = robotImage.rotate(robotw, expand=True)
+        tkrobotImage = ImageTk.PhotoImage(robotImageR)
+        crobotImage = canvas.create_image(canvasOutput[0], canvasOutput[1], image=tkrobotImage)
+        robotx = temprobotx
+        roboty = temproboty
+        robotw = temprobotw
 
     if isEnabled % 2 == 1:
         root.after(deltaT, updateRobotPose)
 
 
-def checkRobotPoseUpdate(xpos, ypos, radius):
+def checkRobotPoseUpdate(xpos, ypos, wdeg, radius):
+    print(xpos, ypos)
+    print(getRobotVertices(xpos, ypos, wdeg, radius))
     try:
         print(OCGarr[xpos][ypos])
     except:
@@ -135,12 +143,33 @@ def checkRobotPoseUpdate(xpos, ypos, radius):
         for y in range(ypos - radius, ypos + radius):
             if np.hypot(x - xpos, y - ypos) <= radius:
                 try:
-                    if OCGarr[x][y] == 100:
+                    if OCGarr[x][y] == 100 or x <= 0 or y <= 0:
                         return False
                 except:
                     return False
 
     return True
+
+
+def getRobotVertices(xpos, ypos, wdeg, radius):
+    wdeg = -wdeg + 45
+    v1theta = -1 * wdeg + 90
+    print(v1theta)
+    v2theta = -1 * wdeg
+    v3theta = -1 * wdeg - 90
+    v4theta = -1 * wdeg - 180
+
+    v1x = radius * np.cos(v1theta * np.pi / 180)
+    v1y = radius * np.sin(v1theta * np.pi / 180)
+    v2x = radius * np.cos(v2theta * np.pi / 180)
+    v2y = radius * np.sin(v2theta * np.pi / 180)
+    v3x = radius * np.cos(v3theta * np.pi / 180)
+    v3y = radius * np.sin(v3theta * np.pi / 180)
+    v4x = radius * np.cos(v4theta * np.pi / 180)
+    v4y = radius * np.sin(v4theta * np.pi / 180)
+
+    return [int(xpos + v1x), int(ypos + v1y), int(xpos + v2x), int(ypos + v2y), int(xpos + v3x), int(ypos + v3y),
+            int(xpos + v4x), int(ypos + v4y)]
 
 
 "Joystick instance"
@@ -191,8 +220,8 @@ robotImage = robotImage.resize((40, 40))
 tkrobotImage = ImageTk.PhotoImage(robotImage)
 crobotImage = canvas.create_image(cWidth / 2, cHeight / 2, image=tkrobotImage)
 
-robotx = 0
-roboty = 0
+robotx = cWidth / 2
+roboty = -1 * cHeight / 2
 robotw = 0  # in degrees
 
 "Create and pack buttons for tFrame"
