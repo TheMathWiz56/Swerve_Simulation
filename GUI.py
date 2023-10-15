@@ -20,7 +20,8 @@ To Do List:
 3. have main gui default to normal field image and occupancy grid
 4. get xbox input in program
 
-combine occupancy grid classes into one
+create graphic for what robot looks like, ie where modules are and which is length and which is width
+
 
 5. make swerve drive class
 6. display robot image on top of field image
@@ -49,6 +50,10 @@ sv_ttk.use_dark_theme()
 
 "Tkinter commands"
 
+robotx = 0
+roboty = 0
+robotw = 0  # in degrees
+
 
 def displayOccupancyGrid():
     file = filedialog.askopenfile(mode='r', filetypes=[('Text Document', '*.txt')])
@@ -76,24 +81,47 @@ isEnabled = 0
 def robotEnable():
     global isEnabled
     isEnabled += 1
-    robotEnableFlash()
+    if isEnabled % 2 == 1:
+        robotEnableFlash()
+        updateRobotPose()
 
 
 enabledFlashCounter = 0
+deltaT = 20
 
 
 def robotEnableFlash():
     global enabledFlashCounter
+    if enabledFlashCounter == 0:
+        enabledFlash.config(text="Enabled")
+        enabledFlashCounter += 1
+    else:
+        enabledFlash.config(text="")
+        enabledFlashCounter -= 1
     if isEnabled % 2 == 1:
-        if enabledFlashCounter == 0:
-            enabledFlash.config(text="Enabled")
-            enabledFlashCounter += 1
-        else:
-            enabledFlash.config(text="")
-            enabledFlashCounter -= 1
         root.after(100, robotEnableFlash)
     else:
         enabledFlash.config(text="Enable")
+
+
+def updateRobotPose():
+    global robotx, roboty, robotw, tkrobotImage, crobotImage
+    x, y, x1, y1 = joystick1.get_values()
+    robotx += x * deltaT / 1000 * 50
+    roboty += y * deltaT / 1000 * 50
+    robotw += x1 * deltaT / 1000 * 50
+
+    xyMatrix = np.array([robotx, roboty])
+    rMatrix = np.array([[0, -1], [-1, 0]])
+    canvasOutput = np.matmul(xyMatrix, rMatrix)
+
+    canvas.delete(crobotImage)
+    robotImageR = robotImage.rotate(robotw)
+    tkrobotImage = ImageTk.PhotoImage(robotImageR)
+    crobotImage = canvas.create_image(cWidth / 2 + canvasOutput[0], cHeight / 2 + canvasOutput[1], image=tkrobotImage)
+
+    if isEnabled % 2 == 1:
+        root.after(10000, updateRobotPose)
 
 
 "Joystick instance"
@@ -137,6 +165,11 @@ fieldImage = Image.open("Images/Field Image5.png")
 fieldImage = fieldImage.resize((cWidth, cHeight))
 img = ImageTk.PhotoImage(fieldImage)
 canvas.create_image(0, cHeight / 2, anchor="w", image=img)
+
+robotImage = Image.open("Images/RobotImage.png")
+robotImage = robotImage.resize((40, 40))
+tkrobotImage = ImageTk.PhotoImage(robotImage)
+crobotImage = canvas.create_image(cWidth / 2, cHeight / 2, image=tkrobotImage)
 
 "Create and pack buttons for tFrame"
 tbWidth = 20
