@@ -119,7 +119,7 @@ def updateRobotPose():
     OCGyscaler = ysize / cHeight
 
     if checkRobotPoseUpdate(int(canvasOutput[0] * OCGxscaler), int(ysize - canvasOutput[1] * OCGyscaler - 1),
-                            temprobotw, 35):
+                            temprobotw, 56):
         canvas.delete(crobotImage)
         robotImageR = robotImage.rotate(robotw, expand=True)
         tkrobotImage = ImageTk.PhotoImage(robotImageR)
@@ -127,6 +127,8 @@ def updateRobotPose():
         robotx = temprobotx
         roboty = temproboty
         robotw = temprobotw
+    print(checkRobotPoseUpdate(int(canvasOutput[0] * OCGxscaler), int(ysize - canvasOutput[1] * OCGyscaler - 1),
+                               temprobotw, 56))
 
     if isEnabled % 2 == 1:
         root.after(deltaT, updateRobotPose)
@@ -134,19 +136,53 @@ def updateRobotPose():
 
 def checkRobotPoseUpdate(xpos, ypos, wdeg, radius):
     print(xpos, ypos)
-    print(getRobotVertices(xpos, ypos, wdeg, radius))
+    robotVerticesArr = getRobotVertices(xpos, ypos, wdeg, radius)
     try:
         print(OCGarr[xpos][ypos])
     except:
         print("out of bounds")
-    for x in range(xpos - radius, xpos + radius):
+    """for x in range(xpos - radius, xpos + radius):
         for y in range(ypos - radius, ypos + radius):
             if np.hypot(x - xpos, y - ypos) <= radius:
                 try:
                     if OCGarr[x][y] == 100 or x <= 0 or y <= 0:
                         return False
                 except:
-                    return False
+                    return False"""
+    degpv = wdeg + 45
+    times180 = int(abs(degpv) / 180)
+    print(degpv, times180)
+    if times180 > 0:
+        if wdeg > 0:
+            if times180 % 2 == 0:
+                degpv = degpv % 360
+            else:
+                degpv = -180 + degpv % 180
+        else:
+            if times180 % 2 == 1:
+                degpv = degpv % 360
+            else:
+                degpv = -180 + degpv % 180
+    print("wdeg: " + str(degpv))
+
+    v1 = robotVerticesArr[0:2]
+    v2 = robotVerticesArr[2:4]
+    v3 = robotVerticesArr[4:6]
+    v4 = robotVerticesArr[6:8]
+
+    "top, right, left, down"
+    if -45 < degpv < 45:
+        if not (rectangularRobotPoseCheck(v3, v4, v2, v1)):
+            return False
+    elif -135 < degpv < -45:
+        if not (rectangularRobotPoseCheck(v2, v3, v1, v4)):
+            return False
+    elif 45 < degpv < 135:
+        if not (rectangularRobotPoseCheck(v4, v1, v3, v2)):
+            return False
+    elif 135 < degpv or degpv < -135:
+        if not (rectangularRobotPoseCheck(v1, v2, v4, v3)):
+            return False
 
     return True
 
@@ -154,7 +190,6 @@ def checkRobotPoseUpdate(xpos, ypos, wdeg, radius):
 def getRobotVertices(xpos, ypos, wdeg, radius):
     wdeg = -wdeg + 45
     v1theta = -1 * wdeg + 90
-    print(v1theta)
     v2theta = -1 * wdeg
     v3theta = -1 * wdeg - 90
     v4theta = -1 * wdeg - 180
@@ -170,6 +205,50 @@ def getRobotVertices(xpos, ypos, wdeg, radius):
 
     return [int(xpos + v1x), int(ypos + v1y), int(xpos + v2x), int(ypos + v2y), int(xpos + v3x), int(ypos + v3y),
             int(xpos + v4x), int(ypos + v4y)]
+
+
+def getLineEquation(v0, v1):
+    x0, y0 = v0
+    x1, y1 = v1
+    try:
+        slope = (y1 - y0) / (x1 - x0)
+        intercept = y0 - slope * x0
+
+        return slope, intercept
+    except:
+        print("division by 0")
+
+
+def rectangularRobotPoseCheck(vT, vR, vL, vD):
+    for x in range(vT[0], vD[0]):
+        if x < vL[0]:
+            if x < vR[0]:
+                if not (checkBetweenLines(vL, vT, vT, vR, x)):
+                    return False
+            else:
+                if not (checkBetweenLines(vL, vT, vR, vD, x)):
+                    return False
+        else:
+            if x < vR[0]:
+                if not (checkBetweenLines(vL, vD, vT, vR, x)):
+                    return False
+            else:
+                if not (checkBetweenLines(vL, vD, vR, vD, x)):
+                    return False
+    return True
+
+
+def checkBetweenLines(v1, v2, v3, v4, x):
+    line1 = getLineEquation(v1, v2)
+    line2 = getLineEquation(v3, v4)
+    for y in range(int(line1[0] * x + line1[1]), int(line2[0] * x + line2[1])):
+        try:
+            if OCGarr[x][y] == 100 or x <= 0 or y <= 0:
+                return False
+        except:
+            return False
+
+    return True
 
 
 "Joystick instance"
