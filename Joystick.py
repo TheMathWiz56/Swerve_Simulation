@@ -3,6 +3,13 @@ import math
 import threading
 
 
+def deadzone(input, deadzone):
+    if abs(input) <= deadzone:
+        return 0
+    else:
+        return input
+
+
 class XboxController(object):
     MAX_TRIG_VAL = math.pow(2, 8)
     MAX_JOY_VAL = math.pow(2, 15)
@@ -35,11 +42,18 @@ class XboxController(object):
         self._monitor_thread.start()
 
     def get_values(self):  # return the buttons/triggers that you care about in this methode
+        self.deadzoneJoysticks()
         x = self.LeftJoystickX
         y = self.LeftJoystickY
         x2 = self.RightJoystickX
         y2 = self.RightJoystickY
         return x, y, x2, y2
+
+    def deadzoneJoysticks(self):
+        self.LeftJoystickX = deadzone(self.LeftJoystickX, .1)
+        self.LeftJoystickY = deadzone(self.LeftJoystickY, .1)
+        self.RightJoystickX = deadzone(self.RightJoystickX, .1)
+        self.RightJoystickY = deadzone(self.RightJoystickY, .1)
 
     def apply_deadzone(self, num, deadzone):
         if abs(num) <= deadzone:

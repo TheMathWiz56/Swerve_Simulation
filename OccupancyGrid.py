@@ -35,3 +35,6 @@ class OccupancyGrid:
     "Displays the Occupancy Grid as an image for easy visualization"
     def displayGrid(self):
         Image.fromarray(self.occupancy_grid).show()
+
+    def getOGGrid(self):
+        return self.occupancy_grid

@@ -32,6 +32,8 @@ create graphic for what robot looks like, ie where modules are and which is leng
 
 11. only path into correct color zones
 
+button for only manual control screen, just field and robot with maybe joysticks
+
 
 """
 
@@ -40,27 +42,19 @@ np.set_printoptions(threshold=sys.maxsize)
 
 "Tkinter window size and formatting"
 width = "970"
-height = "470"
+height = "870"
 root = tk.Tk()
 root.geometry(width + "x" + height)
 root.minsize(int(width), int(height))
-root.maxsize(int(width), int(height))
+# root.maxsize(int(width), int(height))
 root.title("2848 Swerve Path Planner")
 sv_ttk.use_dark_theme()
 
 "Tkinter commands"
 
-robotx = 0
-roboty = 0
-robotw = 0  # in degrees
-
-
-def displayOccupancyGrid():
-    file = filedialog.askopenfile(mode='r', filetypes=[('Text Document', '*.txt')])
-    if file:
-        folder_path = os.path.abspath(file.name)
-        oc2 = OccupancyGrid.OccupancyGrid(folder_path)
-        oc2.displayGrid()
+OCG = OccupancyGrid.OccupancyGrid("Occupancy Grids/Occupancy Grid3.txt")
+OCGarr = np.array(OCG.getOGGrid())
+print(OCGarr.shape)
 
 
 def getWindowSize():
@@ -107,21 +101,46 @@ def robotEnableFlash():
 def updateRobotPose():
     global robotx, roboty, robotw, tkrobotImage, crobotImage
     x, y, x1, y1 = joystick1.get_values()
-    robotx += x * deltaT / 1000 * 50
-    roboty += y * deltaT / 1000 * 50
-    robotw += x1 * deltaT / 1000 * 50
+    "will need to find PythagC, cap at maxV and then find theta from og x and y"
+    robotx += (x * deltaT / 1000 * 500)
+    roboty += (y * deltaT / 1000 * 500)
+    robotw += x1 * deltaT / 1000 * 1000 * -1
 
     xyMatrix = np.array([robotx, roboty])
-    rMatrix = np.array([[0, -1], [-1, 0]])
+    rMatrix = np.array([[1, 0], [0, -1]])
     canvasOutput = np.matmul(xyMatrix, rMatrix)
+    print(canvasOutput)
+
+    xsize, ysize = OCGarr.shape
+    OCGxscaler = xsize / cWidth
+    OCGyscaler = ysize / cHeight
+
+    checkRobotPoseUpdate(int(canvasOutput[0] * OCGxscaler), int(ysize - canvasOutput[1] * OCGyscaler - 1), 50)
 
     canvas.delete(crobotImage)
-    robotImageR = robotImage.rotate(robotw)
+    robotImageR = robotImage.rotate(robotw, expand=True)
     tkrobotImage = ImageTk.PhotoImage(robotImageR)
-    crobotImage = canvas.create_image(cWidth / 2 + canvasOutput[0], cHeight / 2 + canvasOutput[1], image=tkrobotImage)
+    crobotImage = canvas.create_image(canvasOutput[0], canvasOutput[1], image=tkrobotImage)
 
     if isEnabled % 2 == 1:
-        root.after(10000, updateRobotPose)
+        root.after(deltaT, updateRobotPose)
+
+
+def checkRobotPoseUpdate(xpos, ypos, radius):
+    try:
+        print(OCGarr[xpos][ypos])
+    except:
+        print("out of bounds")
+    for x in range(xpos - radius, xpos + radius):
+        for y in range(ypos - radius, ypos + radius):
+            if np.hypot(x - xpos, y - ypos) <= radius:
+                try:
+                    if OCGarr[x][y] == 100:
+                        return False
+                except:
+                    return False
+
+    return True
 
 
 "Joystick instance"
@@ -153,23 +172,28 @@ mFrame1.pack(side='left')
 bFrame0.pack(side='left')
 bFrame1.pack(side='left')
 
-"Create and pack field image and canvas"
+"Create and pack field&robot image and canvas"
 cSizeMultiplier = 7680 / 3720
-cHeight = 375
-cWidth = int(cHeight * cSizeMultiplier)
+cWidth = 375
+cHeight = int(cWidth * cSizeMultiplier)
 mFrame0.configure(width=cWidth, height=cHeight)
 canvas = tk.Canvas(mFrame0, height=cHeight, width=cWidth)
-canvas.pack(side='left', anchor='sw', expand=True)
+canvas.pack(side='left', anchor='sw', expand=True, padx=200)
 
 fieldImage = Image.open("Images/Field Image5.png")
-fieldImage = fieldImage.resize((cWidth, cHeight))
+fieldImage = fieldImage.resize((cHeight, cWidth))
+fieldImage = fieldImage.rotate(90, expand=True)
 img = ImageTk.PhotoImage(fieldImage)
 canvas.create_image(0, cHeight / 2, anchor="w", image=img)
 
-robotImage = Image.open("Images/RobotImage.png")
+robotImage = Image.open("Images/RobotImageBlue.png")
 robotImage = robotImage.resize((40, 40))
 tkrobotImage = ImageTk.PhotoImage(robotImage)
 crobotImage = canvas.create_image(cWidth / 2, cHeight / 2, image=tkrobotImage)
+
+robotx = 0
+roboty = 0
+robotw = 0  # in degrees
 
 "Create and pack buttons for tFrame"
 tbWidth = 20
@@ -189,11 +213,15 @@ enabledFlash.pack(anchor="e")
 jcsize = 165
 jcanvas0 = tk.Canvas(mFrame1, width=jcsize, height=jcsize)
 jcanvas1 = tk.Canvas(mFrame1, width=jcsize, height=jcsize)
+jcanvas0lbl = ttk.Label(mFrame1, text="Left Joystick")
+jcanvas1lbl = ttk.Label(mFrame1, text="Right Joystick")
 
 jpadx = 5
 jpady = 10
+jcanvas0lbl.pack(side='top', anchor="center", pady=jpady, padx=jpadx)
 jcanvas0.pack(side='top', anchor="w", pady=jpady, padx=jpadx)
 jcanvas1.pack(side='top', anchor="w", pady=jpady, padx=jpadx)
+jcanvas1lbl.pack(side='top', anchor="center", pady=jpady, padx=jpadx)
 
 "Draw axes on Joystick Canvases"
 jcanvas0.create_oval(0, 0, jcsize, jcsize, fill="white")
