@@ -46,7 +46,7 @@ height = "870"
 root = tk.Tk()
 root.geometry(width + "x" + height)
 root.minsize(int(width), int(height))
-# root.maxsize(int(width), int(height))
+root.maxsize(int(width), int(height))
 root.title("2848 Swerve Path Planner")
 sv_ttk.use_dark_theme()
 
@@ -54,6 +54,16 @@ sv_ttk.use_dark_theme()
 
 OCG = OccupancyGrid.OccupancyGrid("Occupancy Grids/Occupancy Grid3.txt")
 OCGarr = np.array(OCG.getOGGrid())
+"all if ft/s, ft/s^2, and ft/s^3 respectively, jerk may not be needed"
+"Will need to take angular velocity, acceleration, and jerk into account"
+vMax = 0
+aMax = 0
+jMax = 0
+
+rWidth = 0
+rLength = 0
+
+parameters = [vMax, aMax, jMax, rWidth, rLength]
 print(OCGarr.shape)
 
 
@@ -81,7 +91,7 @@ def robotEnable():
 
 
 enabledFlashCounter = 0
-deltaT = 20
+deltaT = 10
 
 
 def robotEnableFlash():
@@ -251,6 +261,47 @@ def checkBetweenLines(v1, v2, v3, v4, x):
     return True
 
 
+def updateParameterScreen(i, parameterName):
+    window = tk.Toplevel(root)
+    window.title = "Update Parameter"
+    window.geometry("250x150")
+    sv_ttk.use_dark_theme()
+    parameterNameLbl = ttk.Label(window, text=parameterName)
+    parameterNameLbl.pack()
+    parameterEntry = ttk.Entry(window, takefocus=True)
+    parameterEntry.pack()
+    parameterButton = ttk.Button(window, text="Update Parameter",
+                                 command=lambda: updateParameter(i, parameterEntry.get(), window))
+    parameterButton.pack()
+    window.mainloop()
+
+
+def updateParameter(i, value, window):
+    parameters[i] = value
+    print(parameters[i])
+    window.destroy()
+
+
+def checkPoseKinematics(x, y, x1):
+    "returns coerced updated x y and w according to kinematics data"
+    global robotx, roboty, robotw
+    temprobotx = robotx
+    temproboty = roboty
+    temprobotw = robotw
+
+    temprobotx += (x * deltaT / 1000 * 500)
+    temproboty += (y * deltaT / 1000 * 500)
+    temprobotw += x1 * deltaT / 1000 * 1000 * -1
+
+
+def rangeCoerce(cmin, cmax, cinput):
+    if cinput > cmax:
+        return cmax
+    elif cinput < cmin:
+        return cmin
+    return cinput
+
+
 "Joystick instance"
 joystick1 = Joystick.XboxController()
 root.after(20, updateJoystick)
@@ -383,7 +434,7 @@ driveM.add_cascade(label="Swerve")
 robotM.add_cascade(label="Physical Settings", menu=physicalSettingsM)
 physicalSettingsM.add_cascade(label="Kinematics", menu=kinematicsM)
 physicalSettingsM.add_cascade(label="Dimensions", menu=dimensionsM)
-kinematicsM.add_cascade(label="MAX Velocity")
+kinematicsM.add_cascade(label="MAX Velocity", command=lambda: updateParameterScreen(0, "Max Velocity"))
 kinematicsM.add_cascade(label="MAX Acceleration")
 kinematicsM.add_cascade(label="MAX Jerk")
 dimensionsM.add_cascade(label="Edit Width")
