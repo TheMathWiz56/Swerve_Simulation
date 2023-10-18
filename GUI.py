@@ -137,31 +137,18 @@ def updateRobotPose():
         robotx = temprobotx
         roboty = temproboty
         robotw = temprobotw
-    print(checkRobotPoseUpdate(int(canvasOutput[0] * OCGxscaler), int(ysize - canvasOutput[1] * OCGyscaler - 1),
-                               temprobotw, 56))
-
+    """print(checkRobotPoseUpdate(int(canvasOutput[0] * OCGxscaler), int(ysize - canvasOutput[1] * OCGyscaler - 1),
+                               temprobotw, 56))"""
     if isEnabled % 2 == 1:
         root.after(deltaT, updateRobotPose)
 
 
 def checkRobotPoseUpdate(xpos, ypos, wdeg, radius):
-    print(xpos, ypos)
+    # print(xpos, ypos)
     robotVerticesArr = getRobotVertices(xpos, ypos, wdeg, radius)
-    try:
-        print(OCGarr[xpos][ypos])
-    except:
-        print("out of bounds")
-    """for x in range(xpos - radius, xpos + radius):
-        for y in range(ypos - radius, ypos + radius):
-            if np.hypot(x - xpos, y - ypos) <= radius:
-                try:
-                    if OCGarr[x][y] == 100 or x <= 0 or y <= 0:
-                        return False
-                except:
-                    return False"""
     degpv = wdeg + 45
     times180 = int(abs(degpv) / 180)
-    print(degpv, times180)
+    # print(degpv, times180)
     if times180 > 0:
         if wdeg > 0:
             if times180 % 2 == 0:
@@ -173,7 +160,7 @@ def checkRobotPoseUpdate(xpos, ypos, wdeg, radius):
                 degpv = degpv % 360
             else:
                 degpv = -180 + degpv % 180
-    print("wdeg: " + str(degpv))
+    # print("wdeg: " + str(degpv))
 
     v1 = robotVerticesArr[0:2]
     v2 = robotVerticesArr[2:4]
@@ -285,13 +272,13 @@ def updateParameter(i, value, window):
 def checkPoseKinematics(x, y, x1):
     "returns coerced updated x y and w according to kinematics data"
     global robotx, roboty, robotw
-    temprobotx = robotx
-    temproboty = roboty
-    temprobotw = robotw
-
-    temprobotx += (x * deltaT / 1000 * 500)
-    temproboty += (y * deltaT / 1000 * 500)
-    temprobotw += x1 * deltaT / 1000 * 1000 * -1
+    print(vMax)
+    vMaxpx = fttocm(vMax)
+    cmtopx(vMaxpx)
+    print(vMaxpx)
+    temprobotx = robotx + (x * deltaT / 1000)
+    temproboty = roboty + (y * deltaT / 1000 * 500)
+    temprobotw = robotw + x1 * deltaT / 1000 * 1000 * -1
 
 
 def rangeCoerce(cmin, cmax, cinput):
@@ -300,6 +287,20 @@ def rangeCoerce(cmin, cmax, cinput):
     elif cinput < cmin:
         return cmin
     return cinput
+
+
+def pxtocm(px):
+    for i in px:
+        i = i * 2.14
+
+
+def cmtopx(cm):
+    for i in cm:
+        i = i * .468
+
+
+def fttocm(ft):
+    return ft * 30.48
 
 
 "Joystick instance"
