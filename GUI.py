@@ -56,14 +56,16 @@ OCG = OccupancyGrid.OccupancyGrid("Occupancy Grids/Occupancy Grid3.txt")
 OCGarr = np.array(OCG.getOGGrid())
 "all if ft/s, ft/s^2, and ft/s^3 respectively, jerk may not be needed"
 "Will need to take angular velocity, acceleration, and jerk into account"
-vMax = 0
-aMax = 0
-jMax = 0
+vMaxi = 0
+aMaxi = 1
+jMaxi = 2
 
-rWidth = 0
-rLength = 0
+rWidthi = 3
+rLengthi = 4
+rvelocityx = 0
+rvelocityy = 0
 
-parameters = [vMax, aMax, jMax, rWidth, rLength]
+parameters = [25.0, 1.0, 0.0, 0.0, 0.0]
 print(OCGarr.shape)
 
 
@@ -109,15 +111,17 @@ def robotEnableFlash():
 
 
 def updateRobotPose():
-    global robotx, roboty, robotw, tkrobotImage, crobotImage
+    global robotx, roboty, robotw, tkrobotImage, crobotImage, rvelocityy, rvelocityx
     x, y, x1, y1 = joystick1.get_values()
+    velocities = checkPoseKinematics(x, y, x1)
+    "need to convert velocity back into components"
     "will need to find PythagC, cap at maxV and then find theta from og x and y"
     temprobotx = robotx
     temproboty = roboty
     temprobotw = robotw
 
-    temprobotx += (x * deltaT / 1000 * 500)
-    temproboty += (y * deltaT / 1000 * 500)
+    temprobotx += (deltaT / 1000) * velocities[0]
+    temproboty += (deltaT / 1000) * velocities[1]
     temprobotw += x1 * deltaT / 1000 * 1000 * -1
 
     xyMatrix = np.array([temprobotx, temproboty])
@@ -137,6 +141,9 @@ def updateRobotPose():
         robotx = temprobotx
         roboty = temproboty
         robotw = temprobotw
+    else:
+        rvelocityx = 0
+        rvelocityy = 0
     """print(checkRobotPoseUpdate(int(canvasOutput[0] * OCGxscaler), int(ysize - canvasOutput[1] * OCGyscaler - 1),
                                temprobotw, 56))"""
     if isEnabled % 2 == 1:
@@ -264,21 +271,44 @@ def updateParameterScreen(i, parameterName):
 
 
 def updateParameter(i, value, window):
-    parameters[i] = value
-    print(parameters[i])
+    parameters[i] = float(value)
     window.destroy()
 
 
 def checkPoseKinematics(x, y, x1):
-    "returns coerced updated x y and w according to kinematics data"
-    global robotx, roboty, robotw
-    print(vMax)
-    vMaxpx = fttocm(vMax)
-    cmtopx(vMaxpx)
-    print(vMaxpx)
-    temprobotx = robotx + (x * deltaT / 1000)
-    temproboty = roboty + (y * deltaT / 1000 * 500)
-    temprobotw = robotw + x1 * deltaT / 1000 * 1000 * -1
+    "Returns coerced updated x y and w according to kinematics data"
+    "Should only do conversions once create a new variable and function for doing so"
+    "need to look at physics C sheet"
+    global robotx, roboty, robotw, rvelocityx, rvelocityy
+    vMaxpx = fttocm(parameters[vMaxi])
+    vMaxpx = cmtopx(vMaxpx)
+    aMaxpx = fttocm(parameters[aMaxi])
+    aMaxpx = cmtopx(aMaxpx)
+
+    print("x,y: " + str(x) + " " + str(y))
+    rvelocity = np.array([rvelocityx, rvelocityy])
+    rvelocity_target = np.array([x * vMaxpx, y * vMaxpx])
+
+    print(rvelocity)
+    print(rvelocity_target)
+    deltaV = rvelocity_target - rvelocity
+    print("DeltaV: " + str(deltaV))
+    print(np.hypot(deltaV[0], deltaV[1]))
+    print(np.hypot(deltaV[0], deltaV[1]) > aMaxpx)
+    if np.hypot(deltaV[0], deltaV[1]) > aMaxpx:
+        rvelocityx += aMaxpx * np.cos(np.arctan2(deltaV[1], deltaV[0]))
+        rvelocityy += aMaxpx * np.sin(np.arctan2(deltaV[1], deltaV[0]))
+
+
+        print(np.arctan2(deltaV[1], deltaV[0]))
+    else:
+        rvelocityx += deltaV[0]
+        rvelocityy += deltaV[1]
+        print(deltaV[0])
+        print(deltaV[1])
+
+    print(rvelocityx, rvelocityy)
+    return rvelocityx, rvelocityy
 
 
 def rangeCoerce(cmin, cmax, cinput):
@@ -290,13 +320,11 @@ def rangeCoerce(cmin, cmax, cinput):
 
 
 def pxtocm(px):
-    for i in px:
-        i = i * 2.14
+    return px * 2.14
 
 
 def cmtopx(cm):
-    for i in cm:
-        i = i * .468
+    return cm * .468
 
 
 def fttocm(ft):
@@ -436,7 +464,7 @@ robotM.add_cascade(label="Physical Settings", menu=physicalSettingsM)
 physicalSettingsM.add_cascade(label="Kinematics", menu=kinematicsM)
 physicalSettingsM.add_cascade(label="Dimensions", menu=dimensionsM)
 kinematicsM.add_cascade(label="MAX Velocity", command=lambda: updateParameterScreen(0, "Max Velocity"))
-kinematicsM.add_cascade(label="MAX Acceleration")
+kinematicsM.add_cascade(label="MAX Acceleration", command=lambda: updateParameterScreen(1, "Max Acceleration"))
 kinematicsM.add_cascade(label="MAX Jerk")
 dimensionsM.add_cascade(label="Edit Width")
 dimensionsM.add_cascade(label="Edit Length")
