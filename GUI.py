@@ -65,7 +65,7 @@ rLengthi = 4
 rvelocityx = 0
 rvelocityy = 0
 
-parameters = [25.0, 1.0, 0.0, 0.0, 0.0]
+parameters = [25.0, 1.0, 0.0, 40.0, 40.0]
 print(OCGarr.shape)
 
 
@@ -187,6 +187,9 @@ def checkRobotPoseUpdate(xpos, ypos, wdeg, radius):
     elif 135 < degpv or degpv < -135:
         if not (rectangularRobotPoseCheck(v1, v2, v4, v3)):
             return False
+    else:  # Odd multiple of 45 check, aka vertical line check, will need an extra check if W != L
+        if not (verticalLinePoseCheck(xpos, ypos)):
+            return False
 
     return True
 
@@ -255,6 +258,18 @@ def checkBetweenLines(v1, v2, v3, v4, x):
     return True
 
 
+def verticalLinePoseCheck(xpos, ypos):
+    for x in range(xpos - int(parameters[3]), xpos + int(parameters[3])):
+        for y in range(ypos - int(parameters[3]), ypos + int(parameters[3])):
+            try:
+                if OCGarr[x][y] == 100 or x <= 0 or y <= 0:
+                    return False
+            except:
+                return False
+
+    return True
+
+
 def updateParameterScreen(i, parameterName):
     window = tk.Toplevel(root)
     window.title = "Update Parameter"
@@ -298,7 +313,6 @@ def checkPoseKinematics(x, y, x1):
     if np.hypot(deltaV[0], deltaV[1]) > aMaxpx:
         rvelocityx += aMaxpx * np.cos(np.arctan2(deltaV[1], deltaV[0]))
         rvelocityy += aMaxpx * np.sin(np.arctan2(deltaV[1], deltaV[0]))
-
 
         print(np.arctan2(deltaV[1], deltaV[0]))
     else:
@@ -375,7 +389,7 @@ img = ImageTk.PhotoImage(fieldImage)
 canvas.create_image(0, cHeight / 2, anchor="w", image=img)
 
 robotImage = Image.open("Images/RobotImageBlue.png")
-robotImage = robotImage.resize((40, 40))
+robotImage = robotImage.resize((int(parameters[3]), int(parameters[4])))
 tkrobotImage = ImageTk.PhotoImage(robotImage)
 crobotImage = canvas.create_image(cWidth / 2, cHeight / 2, image=tkrobotImage)
 
