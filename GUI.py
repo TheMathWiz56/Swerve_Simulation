@@ -68,6 +68,10 @@ rvelocityy = 0
 parameters = [25.0, 1.0, 0.0, 40.0, 40.0]
 print(OCGarr.shape)
 
+"0th point is the start, last point is the end"
+"Each point contains an x, y, and theta"
+waypointlist = []
+
 
 def getWindowSize():
     print(root.winfo_width())
@@ -345,6 +349,28 @@ def fttocm(ft):
     return ft * 30.48
 
 
+def draw_oval(event, color):
+    x1 = event.x
+    y1 = event.y
+    x2 = event.x
+    y2 = event.y
+    # Draw an oval in the given co-ordinates
+    return canvas.create_oval(x1, y1, x2, y2, fill=color, width=5)
+
+
+def select_start(event):
+    waypointlist[0] = draw_oval(event, "green")
+
+
+def select_end(event):
+    waypointlist.append(draw_oval(event, "red"))
+
+
+def select_intermediate_point(event):
+    if waypointlist[0] is not None and waypointlist[len(waypointlist) - 1] is not None:
+        waypointlist.insert(draw_oval(event, "black"), len(waypointlist) - 2)
+
+
 "Joystick instance"
 joystick1 = Joystick.XboxController()
 root.after(20, updateJoystick)
@@ -381,6 +407,7 @@ cHeight = int(cWidth * cSizeMultiplier)
 mFrame0.configure(width=cWidth, height=cHeight)
 canvas = tk.Canvas(mFrame0, height=cHeight, width=cWidth)
 canvas.pack(side='left', anchor='sw', expand=True, padx=200)
+canvas.bind('<Button-1>', draw_line)
 
 fieldImage = Image.open("Images/Field Image5.png")
 fieldImage = fieldImage.resize((cHeight, cWidth))
