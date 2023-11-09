@@ -70,7 +70,7 @@ print(OCGarr.shape)
 
 "0th point is the start, last point is the end"
 "Each point contains an x, y, and theta"
-waypointlist = []
+waypointlist = [0, 0]
 
 
 def getWindowSize():
@@ -355,20 +355,52 @@ def draw_oval(event, color):
     x2 = event.x
     y2 = event.y
     # Draw an oval in the given co-ordinates
-    return canvas.create_oval(x1, y1, x2, y2, fill=color, width=5)
+    return canvas.create_oval(x1, y1, x2, y2, fill=color, outline=color, width=5)
+
+
+def print_waypointlist():
+    print("\n")
+    for x in waypointlist:
+        print(x)
 
 
 def select_start(event):
+    if waypointlist[0] != 0:
+        canvas.delete(waypointlist[0])
     waypointlist[0] = draw_oval(event, "green")
+    canvas.bind('<Button-1>', select_intermediate_point)
 
 
 def select_end(event):
-    waypointlist.append(draw_oval(event, "red"))
+    if waypointlist[len(waypointlist) - 1] != 0:
+        canvas.delete(waypointlist[len(waypointlist) - 1])
+    waypointlist[len(waypointlist) - 1] = draw_oval(event, "red")
+    canvas.bind('<Button-1>', select_intermediate_point)
+
+
+def bind_select_start():
+    canvas.bind('<Button-1>', select_start)
+
+
+def bind_select_end():
+    canvas.bind('<Button-1>', select_end)
 
 
 def select_intermediate_point(event):
-    if waypointlist[0] is not None and waypointlist[len(waypointlist) - 1] is not None:
-        waypointlist.insert(draw_oval(event, "black"), len(waypointlist) - 2)
+    waypointlist.insert(len(waypointlist) - 1, draw_oval(event, "black"))
+
+
+def highlight_closest_point(event):
+    print_waypointlist()
+    x = event.x
+    y = event.y
+    id = canvas.find_closest(x, y)
+    print()
+    print(id[0])
+    try:
+        canvas.itemconfig(id[0], outline="blue")
+    except:
+        print()
 
 
 "Joystick instance"
@@ -407,7 +439,8 @@ cHeight = int(cWidth * cSizeMultiplier)
 mFrame0.configure(width=cWidth, height=cHeight)
 canvas = tk.Canvas(mFrame0, height=cHeight, width=cWidth)
 canvas.pack(side='left', anchor='sw', expand=True, padx=200)
-canvas.bind('<Button-1>', draw_line)
+canvas.bind('<Button-1>', select_intermediate_point)
+canvas.bind('<Button-3>', highlight_closest_point)
 
 fieldImage = Image.open("Images/Field Image5.png")
 fieldImage = fieldImage.resize((cHeight, cWidth))
@@ -426,8 +459,8 @@ robotw = 0  # in degrees
 
 "Create and pack buttons for tFrame"
 tbWidth = 20
-pickStart = ttk.Button(tFrame0, text="Pick Start", width=tbWidth)
-pickEnd = ttk.Button(tFrame0, text="Pick End", width=tbWidth)
+pickStart = ttk.Button(tFrame0, text="Pick Start", width=tbWidth, command=bind_select_start)
+pickEnd = ttk.Button(tFrame0, text="Pick End", width=tbWidth, command=bind_select_end)
 showPath = ttk.Button(tFrame0, text="Show Path", width=tbWidth)
 enabledFlash = ttk.Button(tFrame1, text="Enable", width=tbWidth, command=robotEnable)
 
