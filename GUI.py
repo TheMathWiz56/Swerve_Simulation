@@ -333,7 +333,7 @@ def draw_oval(event, color):
 
 def draw_oval_int(x1, y1, color):
     # Draw an oval in the given co-ordinates
-    return canvas.create_oval(x1, y1, x1, y1, fill=color, outline=color, width=5)
+    return canvas.create_oval(x1, y1, x1, y1, fill=color, outline=color, width=2)
 
 
 def print_waypointlist():
