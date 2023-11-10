@@ -9,33 +9,7 @@ import os
 from PIL import ImageTk, Image
 import GenerateOGfromImage
 import Joystick
-
-"""
-To Do List:
-1. edit field image for tool, use an expected color for empty
-2. create tool to make occupancy grid from image
-    can create occupancy grid with color-zone differentiation
-    occupancy grid with not color-zone differentiation (program differentiates)
-
-3. have main gui default to normal field image and occupancy grid
-4. get xbox input in program
-
-create graphic for what robot looks like, ie where modules are and which is length and which is width
-
-
-5. make swerve drive class
-6. display robot image on top of field image
-7. ability to move robot around on field
-8. ability to rotate robot on field
-9. edge detection for robot movement
-10. auto pathing........
-
-11. only path into correct color zones
-
-button for only manual control screen, just field and robot with maybe joysticks
-
-
-"""
+import Interpolation
 
 "Prints whole array without abbreviating"
 np.set_printoptions(threshold=sys.maxsize)
@@ -49,8 +23,6 @@ root.minsize(int(width), int(height))
 root.maxsize(int(width), int(height))
 root.title("2848 Swerve Path Planner")
 sv_ttk.use_dark_theme()
-
-"Tkinter commands"
 
 OCG = OccupancyGrid.OccupancyGrid("Occupancy Grids/Occupancy Grid3.txt")
 OCGarr = np.array(OCG.getOGGrid())
@@ -71,6 +43,7 @@ print(OCGarr.shape)
 "0th point is the start, last point is the end"
 "Each point contains an x, y, and theta"
 waypointlist = [0, 0]
+interpolationpoints = []
 
 
 def getWindowSize():
@@ -358,10 +331,15 @@ def draw_oval(event, color):
     return canvas.create_oval(x1, y1, x2, y2, fill=color, outline=color, width=5)
 
 
+def draw_oval_int(x1, y1, color):
+    # Draw an oval in the given co-ordinates
+    return canvas.create_oval(x1, y1, x1, y1, fill=color, outline=color, width=5)
+
+
 def print_waypointlist():
     print("\n")
     for x in waypointlist:
-        print(x)
+        print(canvas.coords(x)[2:])
 
 
 def select_start(event):
@@ -369,6 +347,7 @@ def select_start(event):
         canvas.delete(waypointlist[0])
     waypointlist[0] = draw_oval(event, "green")
     canvas.bind('<Button-1>', select_intermediate_point)
+    updpate_interpolation()
 
 
 def select_end(event):
@@ -376,6 +355,7 @@ def select_end(event):
         canvas.delete(waypointlist[len(waypointlist) - 1])
     waypointlist[len(waypointlist) - 1] = draw_oval(event, "red")
     canvas.bind('<Button-1>', select_intermediate_point)
+    updpate_interpolation()
 
 
 def bind_select_start():
@@ -388,6 +368,7 @@ def bind_select_end():
 
 def select_intermediate_point(event):
     waypointlist.insert(len(waypointlist) - 1, draw_oval(event, "black"))
+    updpate_interpolation()
 
 
 def highlight_closest_point(event):
@@ -401,6 +382,38 @@ def highlight_closest_point(event):
         canvas.itemconfig(id[0], outline="blue")
     except:
         print()
+
+
+def destroy_ovals(oval_list):
+    for oval in oval_list:
+        canvas.delete(oval)
+
+
+def destroy_waypoints():
+    global waypointlist
+    destroy_ovals(waypointlist)
+    waypointlist.clear()
+    waypointlist = [0, 0]
+    destroy_interpolation()
+
+
+def destroy_interpolation():
+    destroy_ovals(interpolationpoints)
+    interpolationpoints.clear()
+
+
+def updpate_interpolation():
+    if (waypointlist[len(waypointlist) - 1] != 0) and (waypointlist[0] != 0):
+        if len(interpolationpoints) > 1:
+            destroy_interpolation()
+        points = []
+        for waypoint in waypointlist:
+            coord = canvas.coords(waypoint)
+            points.append(Interpolation.Point(coord[0], coord[1]))
+
+        function = Interpolation.LagrangeInterpolation(points)
+        for x in range(375):
+            interpolationpoints.append(draw_oval_int(x, function.evaluate_PX_at_x(x), "black"))
 
 
 "Joystick instance"
@@ -504,13 +517,13 @@ jimg0 = jcanvas0.create_image(jcsize / 2, jcsize / 2, image=jimgpng)
 jimg1 = jcanvas1.create_image(jcsize / 2, jcsize / 2, image=jimgpng)
 
 "Create and pack buttons for bFrame"
-allianceColor = ttk.Button(bFrame0, text="Alliance Color", width=tbWidth)
+btn_destroy_wapoints = ttk.Button(bFrame0, text="Destroy Waypoints", width=tbWidth, command=destroy_waypoints)
 togglePieces = ttk.Button(bFrame0, text="Toggle Pieces", width=tbWidth)
 timer = ttk.Label(bFrame1, text="Timer", width=tbWidth)
 
 bbpadx = 107
 bbpady = 0
-allianceColor.pack(side='left', padx=bbpadx, pady=bbpady, fill='x')
+btn_destroy_wapoints.pack(side='left', padx=bbpadx, pady=bbpady, fill='x')
 togglePieces.pack(side='left', padx=bbpadx, pady=bbpady, fill='x')
 timer.pack(pady=bbpady, fill='x')
 
