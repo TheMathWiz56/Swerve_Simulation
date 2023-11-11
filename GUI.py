@@ -10,6 +10,7 @@ from PIL import ImageTk, Image
 import GenerateOGfromImage
 import Joystick
 import Interpolation
+import scipy
 
 "Prints whole array without abbreviating"
 np.set_printoptions(threshold=sys.maxsize)
@@ -407,13 +408,21 @@ def updpate_interpolation():
         if len(interpolationpoints) > 1:
             destroy_interpolation()
         points = []
+        pointsx = []
+        pointsy = []
         for waypoint in waypointlist:
             coord = canvas.coords(waypoint)
             points.append(Interpolation.Point(coord[0], coord[1]))
+            pointsx.append(coord[0])
+            pointsy.append(coord[1])
 
-        function = Interpolation.LagrangeInterpolation(points)
+        lagrange_function = Interpolation.LagrangeInterpolation(points)
+        cubic_function = scipy.interpolate.CubicSpline(pointsx, pointsy)
         for x in range(375):
-            interpolationpoints.append(draw_oval_int(x, function.evaluate_PX_at_x(x), "black"))
+            """interpolationpoints.append(draw_oval_int(x, lagrange_function.evaluate_PX_at_x(x), "black"))"""
+            interpolationpoints.append(draw_oval_int(x, cubic_function.__call__(x), "black"))
+
+
 
 
 "Joystick instance"
