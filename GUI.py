@@ -348,7 +348,7 @@ def select_start(event):
         canvas.delete(waypointlist[0])
     waypointlist[0] = draw_oval(event, "green")
     canvas.bind('<Button-1>', select_intermediate_point)
-    updpate_interpolation()
+    update_interpolation()
 
 
 def select_end(event):
@@ -356,7 +356,7 @@ def select_end(event):
         canvas.delete(waypointlist[len(waypointlist) - 1])
     waypointlist[len(waypointlist) - 1] = draw_oval(event, "red")
     canvas.bind('<Button-1>', select_intermediate_point)
-    updpate_interpolation()
+    update_interpolation()
 
 
 def bind_select_start():
@@ -369,18 +369,18 @@ def bind_select_end():
 
 def select_intermediate_point(event):
     waypointlist.insert(len(waypointlist) - 1, draw_oval(event, "black"))
-    updpate_interpolation()
+    update_interpolation()
 
 
 def highlight_closest_point(event):
     print_waypointlist()
     x = event.x
     y = event.y
-    id = canvas.find_closest(x, y)
+    waypoint_id = canvas.find_closest(x, y)
     print()
-    print(id[0])
+    print(waypoint_id[0])
     try:
-        canvas.itemconfig(id[0], outline="blue")
+        canvas.itemconfig(waypoint_id[0], outline="blue")
     except:
         print()
 
@@ -403,13 +403,18 @@ def destroy_interpolation():
     interpolationpoints.clear()
 
 
-def updpate_interpolation():
+def update_interpolation():
     if (waypointlist[len(waypointlist) - 1] != 0) and (waypointlist[0] != 0):
         if len(interpolationpoints) > 1:
             destroy_interpolation()
+
+        """
+        Lagrange and Scipy Cubic Interpolation
         points = []
         pointsx = []
         pointsy = []
+        startx = canvas.coords(waypointlist[0])[0]
+        endx = canvas.coords(waypointlist[len(waypointlist) - 1])[0]
         for waypoint in waypointlist:
             coord = canvas.coords(waypoint)
             points.append(Interpolation.Point(coord[0], coord[1]))
@@ -418,11 +423,25 @@ def updpate_interpolation():
 
         lagrange_function = Interpolation.LagrangeInterpolation(points)
         cubic_function = scipy.interpolate.CubicSpline(pointsx, pointsy)
-        for x in range(375):
-            """interpolationpoints.append(draw_oval_int(x, lagrange_function.evaluate_PX_at_x(x), "black"))"""
-            interpolationpoints.append(draw_oval_int(x, cubic_function.__call__(x), "black"))
+        for x in range(int(startx), int(endx)):
+            interpolationpoints.append(draw_oval_int(x, lagrange_function.evaluate_PX_at_x(x), "black"))
+            interpolationpoints.append(draw_oval_int(x, cubic_function.__call__(x), "black"))"""
 
-
+        for i in range(len(waypointlist) - 1):
+            xk, pk = canvas.coords(waypointlist[i])[:2]
+            xk1, pk1 = canvas.coords(waypointlist[i + 1])[:2]
+            points = [Interpolation.Point(xk, pk), Interpolation.Point(xk1, pk1)]
+            slopes = [-3, 6]
+            print(xk, pk, xk1, pk1)
+            cubic_spline_function = Interpolation.CubicSplineInterpolation(points, slopes)
+            if xk < xk1:
+                for x in range(int(xk), int(xk1)):
+                    print(cubic_spline_function.get_value(x))
+                    interpolationpoints.append(draw_oval_int(x, cubic_spline_function.get_value(x), "black"))
+            else:
+                for x in range(int(xk1), int(xk)):
+                    print(cubic_spline_function.get_value(x))
+                    interpolationpoints.append(draw_oval_int(x, cubic_spline_function.get_value(x), "black"))
 
 
 "Joystick instance"
