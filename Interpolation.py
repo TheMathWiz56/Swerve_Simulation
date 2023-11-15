@@ -89,7 +89,7 @@ class CubicSplineInterpolation:
         return self.H00(x) + self.H01(x) + self.H10(x) + self.H11(x)
 
 
-def main():
+"""def main():
     points = [Point(142, 433), Point(37, 336)]
     slopes = [0, 0]
     test = CubicSplineInterpolation(points, slopes)
@@ -97,4 +97,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main()"""

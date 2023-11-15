@@ -432,15 +432,12 @@ def update_interpolation():
             xk1, pk1 = canvas.coords(waypointlist[i + 1])[:2]
             points = [Interpolation.Point(xk, pk), Interpolation.Point(xk1, pk1)]
             slopes = [-3, 6]
-            print(xk, pk, xk1, pk1)
             cubic_spline_function = Interpolation.CubicSplineInterpolation(points, slopes)
             if xk < xk1:
                 for x in range(int(xk), int(xk1)):
-                    print(cubic_spline_function.get_value(x))
                     interpolationpoints.append(draw_oval_int(x, cubic_spline_function.get_value(x), "black"))
             else:
                 for x in range(int(xk1), int(xk)):
-                    print(cubic_spline_function.get_value(x))
                     interpolationpoints.append(draw_oval_int(x, cubic_spline_function.get_value(x), "black"))
 
 
