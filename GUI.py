@@ -47,6 +47,17 @@ waypointlist = [0, 0]
 interpolationpoints = []
 
 
+"""
+To Do:
+Code will just be for robot simluation and running around the field/driver practice
+
+Could include path planning, but should consider removing
+
+Clean up all code and put into classes and other folders
+
+"""
+
+
 def getWindowSize():
     print(root.winfo_width())
     print(root.winfo_height())
